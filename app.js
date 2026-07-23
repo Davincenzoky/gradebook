@@ -304,7 +304,7 @@ function classAction(id, action) {
   try {
     if (action === 'delete') {
       const s = getStudents(id)
-      const cls = get(`SELECT sectionName FROM classes WHERE id=$id`,{$id})
+      const cls = get(`SELECT sectionName FROM classes WHERE id=$id`,{$id:id})
       const msg = s.length ? `Delete "${cls.sectionName}" with ${s.length} student${s.length > 1 ? 's' : ''}?` : 'Delete this class?'
       if (!confirm(msg)) return
       deleteClass(id)
