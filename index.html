@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#3B82F6">
+<link rel="icon" type="image/svg+xml" href="/gradebook/icons/icon-192.svg">
+<link rel="manifest" href="/gradebook/manifest.json">
+<script defer src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config={darkMode:'class',theme:{extend:{colors:{primary:'#3B82F6'}}}}
+</script>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+.page{min-height:100dvh}.hidden{display:none!important}
+.grade-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.modal-overlay{background:rgba(0,0,0,.5)}
+.dark .modal-overlay{background:rgba(0,0,0,.7)}
+</style>
+<title>Grade Book</title>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors">
+
+<!-- ========== HOME ========== -->
+<div id="page-home" class="page pb-24">
+  <div class="flex justify-between items-center px-4 pt-4 pb-2">
+    <h1 class="text-2xl font-bold">Grade Book</h1>
+    <button onclick="toggleTheme()" class="text-2xl p-1">🌙</button>
+  </div>
+  <div class="px-4 mb-2">
+    <button onclick="exportAllStudents()" class="w-full py-3.5 rounded-xl bg-green-500 text-white font-semibold text-sm border-none cursor-pointer hover:bg-green-600 transition">Export All Students</button>
+  </div>
+  <div id="home-classes" class="px-4"></div>
+  <button onclick="showAddClass()" class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-500 text-white text-3xl shadow-lg border-none cursor-pointer flex items-center justify-center hover:bg-blue-600 transition z-10">+</button>
+</div>
+
+<!-- ========== CLASS DETAIL ========== -->
+<div id="page-class" class="page pb-24 hidden">
+  <div class="flex items-center gap-2 px-4 pt-4 pb-2">
+    <button onclick="navigate('home')" class="text-blue-500 text-lg font-medium">← Back</button>
+    <h1 class="text-xl font-bold flex-1">Class</h1>
+  </div>
+  <div class="flex gap-2 px-4 pb-2">
+    <button onclick="navigate('grade-entry',{classId:currentClassId})" class="flex-1 py-3 rounded-lg bg-blue-500 text-white text-sm font-semibold border-none cursor-pointer hover:bg-blue-600 transition">Enter Grades</button>
+    <button onclick="navigate('import',{classId:currentClassId})" class="flex-1 py-3 rounded-lg bg-blue-500 text-white text-sm font-semibold border-none cursor-pointer hover:bg-blue-600 transition">Paste Students</button>
+  </div>
+  <div class="px-4 pb-2">
+    <input id="student-search" oninput="renderClassDetail()" placeholder="Search student by name or number..." class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm outline-none focus:border-blue-400 transition">
+  </div>
+  <div id="class-students" class="px-4"></div>
+  <button onclick="showAddStudent()" class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-500 text-white text-3xl shadow-lg border-none cursor-pointer flex items-center justify-center hover:bg-blue-600 transition z-10">+</button>
+</div>
+
+<!-- ========== GRADE ENTRY ========== -->
+<div id="page-grade-entry" class="page hidden">
+  <div class="flex items-center gap-2 px-4 pt-4 pb-2">
+    <button onclick="navigate('class',{classId:currentClassId})" class="text-blue-500 text-lg font-medium">← Back</button>
+    <h1 class="text-xl font-bold flex-1">Enter Grades</h1>
+    <button onclick="showAddAssessment()" class="px-4 py-2 rounded-lg bg-blue-500 text-white text-sm font-semibold border-none cursor-pointer hover:bg-blue-600 transition">+ Assessment</button>
+  </div>
+  <div class="grade-scroll" id="grade-entry-grid"></div>
+</div>
+
+<!-- ========== GRADE REPORT ========== -->
+<div id="page-grade-report" class="page hidden">
+  <div class="flex items-center gap-2 px-4 pt-4 pb-2">
+    <button onclick="navigate('class',{classId:currentClassId})" class="text-blue-500 text-lg font-medium">← Back</button>
+    <h1 class="text-xl font-bold flex-1">Grade Report</h1>
+  </div>
+  <div class="bg-blue-500 text-white px-5 py-4 mx-4 rounded-xl mb-3">
+    <h2 class="text-lg font-bold">Student</h2>
+    <div class="flex items-center gap-2 mt-3"><span>Overall Average:</span><span id="report-avg" class="text-3xl font-bold">0.0%</span></div>
+  </div>
+  <div id="grade-report-content" class="px-4"></div>
+</div>
+
+<!-- ========== IMPORT ========== -->
+<div id="page-import" class="page hidden">
+  <div class="flex items-center gap-2 px-4 pt-4 pb-2">
+    <button onclick="navigate('class',{classId:currentClassId})" class="text-blue-500 text-lg font-medium">← Back</button>
+    <h1 class="text-xl font-bold flex-1">Paste Students</h1>
+  </div>
+  <div class="mx-4 p-4 bg-white dark:bg-gray-800 rounded-xl mb-3">
+    <p class="text-sm text-gray-600 dark:text-gray-400">Copy from Excel/Sheets and paste below.</p>
+    <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">Format: Student Number, NAME (one per line)</p>
+    <p class="text-xs text-gray-400 dark:text-gray-600 mt-1">Example:<br>2601010308, AQUINO CLIFFORD C<br>2601010101, ARENDAIN JHON CARLO A</p>
+  </div>
+  <div class="px-4">
+    <textarea id="import-text" rows="8" placeholder="Paste your data here..." class="w-full p-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-mono outline-none focus:border-blue-400 transition"></textarea>
+    <button onclick="importStudents()" class="w-full mt-3 py-4 rounded-xl bg-blue-500 text-white font-semibold border-none cursor-pointer hover:bg-blue-600 transition">Import Students</button>
+    <div id="import-status" class="text-center"></div>
+  </div>
+</div>
+
+<!-- ========== MODALS ========== -->
+
+<!-- Add Class -->
+<div id="modal-add-class" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50" onclick="hideAddClass()">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-[85%] max-w-sm shadow-xl" onclick="event.stopPropagation()">
+    <h2 class="text-xl font-bold mb-4">New Class</h2>
+    <input id="input-section" placeholder="Section Name (e.g., CS1A)" class="w-full px-3 py-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm outline-none focus:border-blue-400">
+    <input id="input-code" placeholder="Subject Code (e.g., GENEL1)" class="w-full px-3 py-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm outline-none focus:border-blue-400">
+    <input id="input-instructor" placeholder="Instructor (optional)" class="w-full px-3 py-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm outline-none focus:border-blue-400">
+    <input id="input-year" placeholder="Academic Year (optional)" class="w-full px-3 py-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm outline-none focus:border-blue-400">
+    <div class="flex justify-end gap-3 mt-2">
+      <button onclick="hideAddClass()" class="px-5 py-2.5 rounded-lg bg-gray-200 dark:bg-gray-600 text-sm border-none cursor-pointer">Cancel</button>
+      <button onclick="submitClass()" class="px-5 py-2.5 rounded-lg bg-blue-500 text-white text-sm border-none cursor-pointer hover:bg-blue-600">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Student -->
+<div id="modal-add-student" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50" onclick="hideAddStudent()">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-[85%] max-w-sm shadow-xl" onclick="event.stopPropagation()">
+    <h2 class="text-xl font-bold mb-4">Add Student</h2>
+    <input id="input-student-num" placeholder="Student Number" class="w-full px-3 py-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm outline-none focus:border-blue-400">
+    <input id="input-student-name" placeholder="Full Name (LAST, FIRST MIDDLE)" class="w-full px-3 py-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm outline-none focus:border-blue-400">
+    <div class="flex justify-end gap-3 mt-2">
+      <button onclick="hideAddStudent()" class="px-5 py-2.5 rounded-lg bg-gray-200 dark:bg-gray-600 text-sm border-none cursor-pointer">Cancel</button>
+      <button onclick="submitStudent()" class="px-5 py-2.5 rounded-lg bg-blue-500 text-white text-sm border-none cursor-pointer hover:bg-blue-600">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Assessment Modal -->
+<div id="modal-assessment" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50" onclick="document.getElementById('modal-assessment').classList.add('hidden')">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-[85%] max-w-sm shadow-xl" onclick="event.stopPropagation()">
+    <h2 id="modal-assessment-title" class="text-xl font-bold mb-4">Assessment</h2>
+    <input id="input-assessment-name" placeholder="Assessment Name" class="w-full px-3 py-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm outline-none focus:border-blue-400">
+    <input id="input-assessment-max" type="number" placeholder="Max Score" value="100" class="w-full px-3 py-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm outline-none focus:border-blue-400">
+    <select id="input-assessment-type" class="w-full px-3 py-3 mb-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm outline-none focus:border-blue-400">
+      <option value="Quiz">Quiz</option><option value="Exam">Exam</option><option value="Assignment">Assignment</option>
+      <option value="Project">Project</option><option value="Recitation">Recitation</option><option value="Other">Other</option>
+    </select>
+    <div class="flex justify-end gap-3 mt-2">
+      <button onclick="document.getElementById('modal-assessment').classList.add('hidden')" class="px-5 py-2.5 rounded-lg bg-gray-200 dark:bg-gray-600 text-sm border-none cursor-pointer">Cancel</button>
+      <button id="btn-delete-assessment" onclick="deleteAssessmentConfirm()" class="px-5 py-2.5 rounded-lg bg-red-500 text-white text-sm border-none cursor-pointer hover:bg-red-600 hidden">Delete</button>
+      <button onclick="submitAssessment()" class="px-5 py-2.5 rounded-lg bg-blue-500 text-white text-sm border-none cursor-pointer hover:bg-blue-600">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.11.0/dist/sql-wasm.js"></script>
+<script src="/gradebook/app.js"></script>
+
+<!-- Register service worker -->
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/gradebook/sw.js')
+}
+</script>
+
+</body>
+</html>
