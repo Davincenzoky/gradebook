@@ -301,18 +301,27 @@ function toggleMenu(id) {
 }
 
 function classAction(id, action) {
-  if (action === 'delete') {
-    const s = getStudents(id)
-    const msg = s.length ? `Delete "${get(`SELECT sectionName FROM classes WHERE id=$id`,{$id}).sectionName}" with ${s.length} student${s.length > 1 ? 's' : ''}?` : 'Delete this class?'
-    if (!confirm(msg)) { openMenuId = null; renderHome(); return }
-    deleteClass(id)
-  } else if (action === 'archive') {
-    archiveClass(id)
-  } else if (action === 'unarchive') {
-    unarchiveClass(id)
+  try {
+    if (action === 'delete') {
+      const s = getStudents(id)
+      const cls = get(`SELECT sectionName FROM classes WHERE id=$id`,{$id})
+      const msg = s.length ? `Delete "${cls.sectionName}" with ${s.length} student${s.length > 1 ? 's' : ''}?` : 'Delete this class?'
+      if (!confirm(msg)) return
+      deleteClass(id)
+      openMenuId = null
+      renderHome()
+    } else if (action === 'archive') {
+      archiveClass(id)
+      openMenuId = null
+      renderHome()
+    } else if (action === 'unarchive') {
+      unarchiveClass(id)
+      openMenuId = null
+      renderHome()
+    }
+  } catch (e) {
+    alert('Error: ' + e.message)
   }
-  openMenuId = null
-  renderHome()
 }
 
 function renderClassDetail() {
