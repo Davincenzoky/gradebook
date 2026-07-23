@@ -67,8 +67,8 @@ function addClass(section, code, instructor, year) {
 function deleteClass(id) {
   const s = all(`SELECT id FROM students WHERE classId = $id`, { $id: id })
   for (const st of s) run(`DELETE FROM grades WHERE studentId = $sid`, { $sid: st.id })
-  run(`DELETE FROM students WHERE classId = $id`, { $id })
-  run(`DELETE FROM classes WHERE id = $id`, { $id })
+  run(`DELETE FROM students WHERE classId = $id`, { $id: id })
+  run(`DELETE FROM classes WHERE id = $id`, { $id: id })
 }
 
 function getArchivedIds() {
@@ -101,7 +101,7 @@ function addStudent(num, name, classId) {
 
 function deleteStudent(id) {
   run(`DELETE FROM grades WHERE studentId = $id`, { $id: id })
-  run(`DELETE FROM students WHERE id = $id`, { $id })
+  run(`DELETE FROM students WHERE id = $id`, { $id: id })
 }
 
 function bulkInsertStudents(classId, students) {
