@@ -434,12 +434,16 @@ function deleteAssessmentConfirm() {
 function importStudents() {
   const text = document.getElementById('import-text').value.trim()
   if (!text) return
-  const lines = text.split('\n')
-  if (lines.length < 2) { alert('Must have a header row and at least one data row.'); return }
+  const lines = text.trim().split('\n').filter(l => l.trim())
   const students = []
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''))
-    if (cols.length >= 2 && cols[0] && cols[1]) students.push({ studentNumber: cols[0], name: cols[1] })
+  for (const line of lines) {
+    let parts
+    if (line.includes('\t')) parts = line.split('\t')
+    else if (line.includes(',')) parts = line.split(',')
+    else parts = [line.slice(0, line.indexOf(' ')), line.slice(line.indexOf(' ') + 1)]
+    const num = (parts[0] || '').trim()
+    const name = (parts.slice(1).join(' ') || '').trim().replace(/^"|"$/g, '')
+    if (num && name) students.push({ studentNumber: num, name })
   }
   if (!students.length) { alert('No valid student data found.'); return }
   if (!confirm(`Found ${students.length} students. Import all?`)) return
