@@ -303,8 +303,8 @@ function toggleMenu(id) {
 function classAction(id, action) {
   if (action === 'delete') {
     const s = getStudents(id)
-    if (s.length && !confirm(`This class has ${s.length} student(s). Delete anyway?`)) { openMenuId = null; renderHome(); return }
-    if (!confirm('Delete this class permanently? This cannot be undone.')) { openMenuId = null; renderHome(); return }
+    const msg = s.length ? `Delete "${get(`SELECT sectionName FROM classes WHERE id=$id`,{$id}).sectionName}" with ${s.length} student${s.length > 1 ? 's' : ''}?` : 'Delete this class?'
+    if (!confirm(msg)) { openMenuId = null; renderHome(); return }
     deleteClass(id)
   } else if (action === 'archive') {
     archiveClass(id)
@@ -430,9 +430,10 @@ function deleteStudentConfirm(id, name) {
 }
 
 function deleteClassConfirm() {
+  const cls = get(`SELECT sectionName FROM classes WHERE id=$id`,{$id:currentClassId})
   const s = getStudents(currentClassId)
-  if (s.length && !confirm(`This class has ${s.length} student(s). Delete anyway?`)) return
-  if (!confirm('Delete this class permanently? This cannot be undone.')) return
+  const msg = s.length ? `Delete "${cls.sectionName}" with ${s.length} student${s.length > 1 ? 's' : ''}?` : `Delete "${cls.sectionName}"?`
+  if (!confirm(msg)) return
   deleteClass(currentClassId)
   navigate('home')
 }
