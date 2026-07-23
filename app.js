@@ -50,11 +50,13 @@ function run(sql, params = {}) {
 function esc(s) { return `"${String(s).replace(/"/g, '""')}"` }
 
 // --- CLASSES ---
-function getClasses() {
-  return all(`SELECT c.*,
+function getClasses(archived) {
+  const allClasses = all(`SELECT c.*,
     (SELECT COUNT(*) FROM students WHERE classId = c.id) as studentCount,
     COALESCE((SELECT AVG(g.score / g.maxScore * 100) FROM students s JOIN grades g ON g.studentId = s.id WHERE s.classId = c.id), 0) as averageGrade
     FROM classes c ORDER BY c.createdAt DESC`)
+  const archivedIds = getArchivedIds()
+  return allClasses.filter(c => archived ? archivedIds.includes(c.id) : !archivedIds.includes(c.id))
 }
 
 function addClass(section, code, instructor, year) {
@@ -67,6 +69,24 @@ function deleteClass(id) {
   for (const st of s) run(`DELETE FROM grades WHERE studentId = $sid`, { $sid: st.id })
   run(`DELETE FROM students WHERE classId = $id`, { $id })
   run(`DELETE FROM classes WHERE id = $id`, { $id })
+}
+
+function getArchivedIds() {
+  return JSON.parse(getSetting('archived_classes') || '[]')
+}
+
+function setArchivedIds(ids) {
+  setSetting('archived_classes', JSON.stringify(ids))
+}
+
+function archiveClass(id) {
+  const ids = getArchivedIds()
+  if (!ids.includes(id)) ids.push(id)
+  setArchivedIds(ids)
+}
+
+function unarchiveClass(id) {
+  setArchivedIds(getArchivedIds().filter(x => x !== id))
 }
 
 // --- STUDENTS ---
@@ -223,32 +243,62 @@ function renderPage() {
 }
 
 function renderHome() {
-  const classes = getClasses()
+  const active = getClasses(false)
+  const archived = getClasses(true)
   const container = document.getElementById('home-classes')
-  if (!classes.length) {
+  if (!active.length && !archived.length) {
     container.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-gray-500">
       <p class="text-lg font-bold">No classes yet</p>
       <p class="text-sm mt-1">Tap + to add your first class</p>
     </div>`
     return
   }
-  container.innerHTML = classes.map(c => {
-    const avg = Number(c.averageGrade).toFixed(1)
-    return `<div onclick="navigate('class',{classId:${c.id}})" class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 shadow cursor-pointer hover:shadow-md transition">
-      <div class="flex justify-between items-center">
-        <span class="text-lg font-bold text-gray-800 dark:text-white">${escHTML(c.sectionName)}</span>
-        <span class="text-sm px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">${escHTML(c.subjectCode)}</span>
-      </div>
-      <div class="flex gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-        <span>Students: ${c.studentCount}</span>
-        <span>Avg: ${c.studentCount > 0 ? avg + '%' : 'N/A'}</span>
-      </div>
-      ${c.instructor ? `<div class="text-xs text-gray-400 dark:text-gray-500 mt-1">${escHTML(c.instructor)}</div>` : ''}
-    </div>`
-  }).join('')
+  let html = ''
+  if (!active.length) {
+    html += `<div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500"><p class="text-lg font-bold">No active classes</p></div>`
+  } else {
+    html += active.map(c => classCard(c, false)).join('')
+  }
+  if (archived.length) {
+    html += `<div class="mt-6 mb-2 px-1 flex justify-between items-center">
+      <span class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Archived (${archived.length})</span>
+      <button onclick="document.getElementById('archived-list').classList.toggle('hidden')" class="text-xs text-blue-500 border-none bg-transparent cursor-pointer">Toggle</button>
+    </div>
+    <div id="archived-list" class="hidden">${archived.map(c => classCard(c, true)).join('')}</div>`
+  }
+  container.innerHTML = html
+}
+
+function classCard(c, isArchived) {
+  const avg = Number(c.averageGrade).toFixed(1)
+  return `<div onclick="${isArchived ? `navigate('class',{classId:${c.id}})` : `navigate('class',{classId:${c.id}})`}" class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 shadow cursor-pointer hover:shadow-md transition ${isArchived ? 'opacity-60' : ''}">
+    <div class="flex justify-between items-center">
+      <span class="text-lg font-bold text-gray-800 dark:text-white">${escHTML(c.sectionName)}</span>
+      <span class="text-sm px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">${escHTML(c.subjectCode)}</span>
+    </div>
+    <div class="flex gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+      <span>Students: ${c.studentCount}</span>
+      <span>Avg: ${c.studentCount > 0 ? avg + '%' : 'N/A'}</span>
+    </div>
+    ${c.instructor ? `<div class="text-xs text-gray-400 dark:text-gray-500 mt-1">${escHTML(c.instructor)}</div>` : ''}
+  </div>`
 }
 
 function renderClassDetail() {
+  const cls = get(`SELECT * FROM classes WHERE id = $id`, { $id: currentClassId })
+  if (!cls) { navigate('home'); return }
+  const isArchived = getArchivedIds().includes(currentClassId)
+  const header = document.getElementById('class-header')
+  header.innerHTML = `<div class="flex items-center gap-2">
+    <button onclick="navigate('home')" class="text-blue-500 text-lg font-medium">← Back</button>
+    <h1 class="text-xl font-bold flex-1">${escHTML(cls.sectionName)}</h1>
+    <div class="flex gap-1">
+      <button onclick="${isArchived ? `unarchiveClass(${currentClassId});renderPage()` : `archiveClass(${currentClassId});renderPage()`}" class="px-3 py-1.5 rounded-lg text-xs font-semibold border-none cursor-pointer ${isArchived ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-yellow-500 text-white hover:bg-yellow-600'} transition">${isArchived ? 'Unarchive' : 'Archive'}</button>
+      <button onclick="deleteClassConfirm()" class="px-3 py-1.5 rounded-lg text-xs font-semibold border-none cursor-pointer bg-red-500 text-white hover:bg-red-600 transition">Delete</button>
+    </div>
+  </div>
+  <div class="text-sm text-gray-500 dark:text-gray-400 ml-1">${escHTML(cls.subjectCode)}${cls.instructor ? ' · ' + escHTML(cls.instructor) : ''}${cls.academicYear ? ' · ' + escHTML(cls.academicYear) : ''}</div>`
+
   const students = getStudents(currentClassId)
   const search = (document.getElementById('student-search')?.value || '').toLowerCase()
   const filtered = search ? students.filter(s => s.name.toLowerCase().includes(search) || s.studentNumber.toLowerCase().includes(search)) : students
@@ -346,6 +396,14 @@ function renderImport() {
 // --- ACTIONS ---
 function deleteStudentConfirm(id, name) {
   if (confirm(`Remove ${name}?`)) { deleteStudent(id); renderPage() }
+}
+
+function deleteClassConfirm() {
+  const s = getStudents(currentClassId)
+  if (s.length && !confirm(`This class has ${s.length} student(s). Delete anyway?`)) return
+  if (!confirm('Delete this class permanently? This cannot be undone.')) return
+  deleteClass(currentClassId)
+  navigate('home')
 }
 
 function saveGrade(studentId, name, val, maxScore, type) {
