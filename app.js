@@ -289,8 +289,8 @@ function classCard(c, isArchived) {
     ${c.instructor ? `<div onclick="navigate('class',{classId:${c.id}})" class="text-xs text-gray-400 dark:text-gray-500 mt-1">${escHTML(c.instructor)}</div>` : ''}
     <button onclick="event.stopPropagation();toggleMenu(${c.id})" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 border-none bg-transparent cursor-pointer text-gray-500 dark:text-gray-400 text-lg">⋮</button>
     ${show ? `<div class="absolute top-10 right-3 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600 z-20 min-w-[140px] overflow-hidden">
-      <button onclick="event.stopPropagation();${isArchived ? `unarchiveClass(${c.id})` : `archiveClass(${c.id})`};openMenuId=null;renderHome()" class="w-full px-4 py-3 text-sm text-left border-none bg-transparent cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 flex items-center gap-2">${isArchived ? '📂 Unarchive' : '📦 Archive'}</button>
-      <button onclick="event.stopPropagation();deleteClassFromHome(${c.id})" class="w-full px-4 py-3 text-sm text-left border-none bg-transparent cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-red-500 flex items-center gap-2">🗑 Delete</button>
+      <button onclick="event.stopPropagation();classAction(${c.id},'${isArchived ? 'unarchive' : 'archive'}')" class="w-full px-4 py-3 text-sm text-left border-none bg-transparent cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 flex items-center gap-2">${isArchived ? '📂 Unarchive' : '📦 Archive'}</button>
+      <button onclick="event.stopPropagation();classAction(${c.id},'delete')" class="w-full px-4 py-3 text-sm text-left border-none bg-transparent cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-red-500 flex items-center gap-2">🗑 Delete</button>
     </div>` : ''}
   </div>`
 }
@@ -300,11 +300,17 @@ function toggleMenu(id) {
   renderHome()
 }
 
-function deleteClassFromHome(id) {
-  const s = getStudents(id)
-  if (s.length && !confirm(`This class has ${s.length} student(s). Delete anyway?`)) return
-  if (!confirm('Delete this class permanently? This cannot be undone.')) return
-  deleteClass(id)
+function classAction(id, action) {
+  if (action === 'delete') {
+    const s = getStudents(id)
+    if (s.length && !confirm(`This class has ${s.length} student(s). Delete anyway?`)) { openMenuId = null; renderHome(); return }
+    if (!confirm('Delete this class permanently? This cannot be undone.')) { openMenuId = null; renderHome(); return }
+    deleteClass(id)
+  } else if (action === 'archive') {
+    archiveClass(id)
+  } else if (action === 'unarchive') {
+    unarchiveClass(id)
+  }
   openMenuId = null
   renderHome()
 }
