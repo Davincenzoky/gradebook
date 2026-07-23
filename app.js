@@ -495,12 +495,31 @@ function importStudents() {
   const lines = text.trim().split('\n').filter(l => l.trim())
   const students = []
   for (const line of lines) {
-    let parts
-    if (line.includes('\t')) parts = line.split('\t')
-    else if (line.includes(',')) parts = line.split(',')
-    else parts = [line.slice(0, line.indexOf(' ')), line.slice(line.indexOf(' ') + 1)]
-    const num = (parts[0] || '').trim()
-    const name = (parts.slice(1).join(' ') || '').trim().replace(/^"|"$/g, '')
+    let parts, num, name
+    if (line.includes('|')) {
+      parts = line.split('|').map(s => s.trim())
+      const first = parts.shift() || ''
+      const m = first.match(/^(\d+)(.*)/)
+      if (m) {
+        num = m[1]
+        name = (m[2] + ' ' + parts.join(' ')).trim().replace(/^"|"$/g, '')
+      } else {
+        num = first
+        name = parts.join(' ').replace(/^"|"$/g, '')
+      }
+    } else if (line.includes('\t')) {
+      parts = line.split('\t')
+      num = (parts[0] || '').trim()
+      name = (parts.slice(1).join(' ') || '').trim().replace(/^"|"$/g, '')
+    } else if (line.includes(',')) {
+      parts = line.split(',')
+      num = (parts[0] || '').trim()
+      name = (parts.slice(1).join(' ') || '').trim().replace(/^"|"$/g, '')
+    } else {
+      parts = [line.slice(0, line.indexOf(' ')), line.slice(line.indexOf(' ') + 1)]
+      num = (parts[0] || '').trim()
+      name = (parts.slice(1).join(' ') || '').trim().replace(/^"|"$/g, '')
+    }
     if (num && name) students.push({ studentNumber: num, name })
   }
   if (!students.length) { alert('No valid student data found.'); return }
