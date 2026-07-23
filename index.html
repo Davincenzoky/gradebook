@@ -39,10 +39,7 @@ input[type=number]{-moz-appearance:textfield}
 
 <!-- ========== CLASS DETAIL ========== -->
 <div id="page-class" class="page pb-24 hidden">
-  <div class="flex items-center gap-2 px-4 pt-4 pb-2">
-    <button onclick="navigate('home')" class="text-blue-500 text-lg font-medium">← Back</button>
-    <h1 class="text-xl font-bold flex-1">Class</h1>
-  </div>
+  <div id="class-header" class="px-4 pt-4 pb-2"></div>
   <div class="flex gap-2 px-4 pb-2">
     <button onclick="navigate('grade-entry',{classId:currentClassId})" class="flex-1 py-3 rounded-lg bg-blue-500 text-white text-sm font-semibold border-none cursor-pointer hover:bg-blue-600 transition">Enter Grades</button>
     <button onclick="navigate('import',{classId:currentClassId})" class="flex-1 py-3 rounded-lg bg-blue-500 text-white text-sm font-semibold border-none cursor-pointer hover:bg-blue-600 transition">Paste Students</button>
