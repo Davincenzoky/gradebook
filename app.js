@@ -14,6 +14,7 @@ async function initSQL() {
   db.run(`CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY AUTOINCREMENT, studentNumber TEXT NOT NULL, name TEXT NOT NULL, classId INTEGER NOT NULL, FOREIGN KEY (classId) REFERENCES classes(id) ON DELETE CASCADE)`)
   db.run(`CREATE TABLE IF NOT EXISTS grades (id INTEGER PRIMARY KEY AUTOINCREMENT, studentId INTEGER NOT NULL, assessmentName TEXT NOT NULL, score REAL DEFAULT 0, maxScore REAL DEFAULT 100, assessmentType TEXT DEFAULT 'Quiz', date TEXT DEFAULT (date('now')), FOREIGN KEY (studentId) REFERENCES students(id) ON DELETE CASCADE)`)
   db.run(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`)
+  try { db.run(`ALTER TABLE classes ADD COLUMN customId TEXT DEFAULT ''`) } catch(e) {}
 }
 
 function saveDB() {
@@ -59,9 +60,9 @@ function getClasses(archived) {
   return allClasses.filter(c => archived ? archivedIds.includes(c.id) : !archivedIds.includes(c.id))
 }
 
-function addClass(section, code, instructor, year) {
-  run(`INSERT INTO classes (sectionName, subjectCode, instructor, academicYear) VALUES ($s, $c, $i, $y)`,
-    { $s: section, $c: code, $i: instructor, $y: year })
+function addClass(section, code, instructor, year, customId) {
+  run(`INSERT INTO classes (sectionName, subjectCode, instructor, academicYear, customId) VALUES ($s, $c, $i, $y, $ci)`,
+    { $s: section, $c: code, $i: instructor, $y: year, $ci: customId || '' })
 }
 
 function deleteClass(id) {
@@ -280,7 +281,10 @@ function classCard(c, isArchived) {
   return `<div class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 shadow cursor-pointer hover:shadow-md transition relative ${isArchived ? 'opacity-60' : ''}">
     <div onclick="navigate('class',{classId:${c.id}})" class="flex justify-between items-center">
       <span class="text-lg font-bold text-gray-800 dark:text-white">${escHTML(c.sectionName)}</span>
-      <span class="text-sm px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">${escHTML(c.subjectCode)}</span>
+      <span class="flex items-center gap-1.5">
+        ${c.customId ? `<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-mono">${escHTML(c.customId)}</span>` : ''}
+        <span class="text-sm px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">${escHTML(c.subjectCode)}</span>
+      </span>
     </div>
     <div onclick="navigate('class',{classId:${c.id}})" class="flex gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
       <span>Students: ${c.studentCount}</span>
@@ -304,8 +308,9 @@ function classAction(id, action) {
   try {
     if (action === 'delete') {
       const s = getStudents(id)
-      const cls = get(`SELECT sectionName FROM classes WHERE id=$id`,{$id:id})
-      const msg = s.length ? `Delete "${cls.sectionName}" with ${s.length} student${s.length > 1 ? 's' : ''}?` : 'Delete this class?'
+      const cls = get(`SELECT sectionName, customId FROM classes WHERE id=$id`,{$id:id})
+      const label = cls.customId ? `${cls.sectionName} [${cls.customId}]` : cls.sectionName
+      const msg = s.length ? `Delete "${label}" with ${s.length} student${s.length > 1 ? 's' : ''}?` : `Delete "${label}"?`
       if (!confirm(msg)) return
       deleteClass(id)
       openMenuId = null
@@ -331,7 +336,7 @@ function renderClassDetail() {
   const header = document.getElementById('class-header')
   header.innerHTML = `<div class="flex items-center gap-2">
     <button onclick="navigate('home')" class="text-blue-500 text-lg font-medium">← Back</button>
-    <h1 class="text-xl font-bold flex-1">${escHTML(cls.sectionName)}</h1>
+    <h1 class="text-xl font-bold flex-1">${escHTML(cls.sectionName)} ${cls.customId ? `<span class="text-sm font-mono text-gray-500 dark:text-gray-400">[${escHTML(cls.customId)}]</span>` : ''}</h1>
     <div class="flex gap-1">
       <button onclick="${isArchived ? `unarchiveClass(${currentClassId});renderPage()` : `archiveClass(${currentClassId});renderPage()`}" class="px-3 py-1.5 rounded-lg text-xs font-semibold border-none cursor-pointer ${isArchived ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-yellow-500 text-white hover:bg-yellow-600'} transition">${isArchived ? 'Unarchive' : 'Archive'}</button>
       <button onclick="deleteClassConfirm()" class="px-3 py-1.5 rounded-lg text-xs font-semibold border-none cursor-pointer bg-red-500 text-white hover:bg-red-600 transition">Delete</button>
@@ -439,9 +444,10 @@ function deleteStudentConfirm(id, name) {
 }
 
 function deleteClassConfirm() {
-  const cls = get(`SELECT sectionName FROM classes WHERE id=$id`,{$id:currentClassId})
+  const cls = get(`SELECT sectionName, customId FROM classes WHERE id=$id`,{$id:currentClassId})
   const s = getStudents(currentClassId)
-  const msg = s.length ? `Delete "${cls.sectionName}" with ${s.length} student${s.length > 1 ? 's' : ''}?` : `Delete "${cls.sectionName}"?`
+  const label = cls.customId ? `${cls.sectionName} [${cls.customId}]` : cls.sectionName
+  const msg = s.length ? `Delete "${label}" with ${s.length} student${s.length > 1 ? 's' : ''}?` : `Delete "${label}"?`
   if (!confirm(msg)) return
   deleteClass(currentClassId)
   navigate('home')
@@ -461,11 +467,12 @@ function submitClass() {
   const section = document.getElementById('input-section').value.trim()
   const code = document.getElementById('input-code').value.trim()
   if (!section || !code) { alert('Section name and subject code are required.'); return }
-  addClass(section, code, document.getElementById('input-instructor').value.trim(), document.getElementById('input-year').value.trim())
+  addClass(section, code, document.getElementById('input-instructor').value.trim(), document.getElementById('input-year').value.trim(), document.getElementById('input-custom-id').value.trim())
   document.getElementById('input-section').value = ''
   document.getElementById('input-code').value = ''
   document.getElementById('input-instructor').value = ''
   document.getElementById('input-year').value = ''
+  document.getElementById('input-custom-id').value = ''
   hideAddClass()
   renderHome()
 }
