@@ -269,19 +269,44 @@ function renderHome() {
   container.innerHTML = html
 }
 
+let openMenuId = null
+document.addEventListener('click', () => {
+  if (openMenuId !== null) { openMenuId = null; if (currentPage === 'home') renderHome() }
+})
+
 function classCard(c, isArchived) {
   const avg = Number(c.averageGrade).toFixed(1)
-  return `<div onclick="${isArchived ? `navigate('class',{classId:${c.id}})` : `navigate('class',{classId:${c.id}})`}" class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 shadow cursor-pointer hover:shadow-md transition ${isArchived ? 'opacity-60' : ''}">
-    <div class="flex justify-between items-center">
+  const show = openMenuId === c.id
+  return `<div class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 shadow cursor-pointer hover:shadow-md transition relative ${isArchived ? 'opacity-60' : ''}">
+    <div onclick="navigate('class',{classId:${c.id}})" class="flex justify-between items-center">
       <span class="text-lg font-bold text-gray-800 dark:text-white">${escHTML(c.sectionName)}</span>
       <span class="text-sm px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">${escHTML(c.subjectCode)}</span>
     </div>
-    <div class="flex gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+    <div onclick="navigate('class',{classId:${c.id}})" class="flex gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
       <span>Students: ${c.studentCount}</span>
       <span>Avg: ${c.studentCount > 0 ? avg + '%' : 'N/A'}</span>
     </div>
-    ${c.instructor ? `<div class="text-xs text-gray-400 dark:text-gray-500 mt-1">${escHTML(c.instructor)}</div>` : ''}
+    ${c.instructor ? `<div onclick="navigate('class',{classId:${c.id}})" class="text-xs text-gray-400 dark:text-gray-500 mt-1">${escHTML(c.instructor)}</div>` : ''}
+    <button onclick="event.stopPropagation();toggleMenu(${c.id})" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 border-none bg-transparent cursor-pointer text-gray-500 dark:text-gray-400 text-lg">⋮</button>
+    ${show ? `<div class="absolute top-10 right-3 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600 z-20 min-w-[140px] overflow-hidden">
+      <button onclick="event.stopPropagation();${isArchived ? `unarchiveClass(${c.id})` : `archiveClass(${c.id})`};openMenuId=null;renderHome()" class="w-full px-4 py-3 text-sm text-left border-none bg-transparent cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 flex items-center gap-2">${isArchived ? '📂 Unarchive' : '📦 Archive'}</button>
+      <button onclick="event.stopPropagation();deleteClassFromHome(${c.id})" class="w-full px-4 py-3 text-sm text-left border-none bg-transparent cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-red-500 flex items-center gap-2">🗑 Delete</button>
+    </div>` : ''}
   </div>`
+}
+
+function toggleMenu(id) {
+  openMenuId = openMenuId === id ? null : id
+  renderHome()
+}
+
+function deleteClassFromHome(id) {
+  const s = getStudents(id)
+  if (s.length && !confirm(`This class has ${s.length} student(s). Delete anyway?`)) return
+  if (!confirm('Delete this class permanently? This cannot be undone.')) return
+  deleteClass(id)
+  openMenuId = null
+  renderHome()
 }
 
 function renderClassDetail() {
