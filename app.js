@@ -467,12 +467,12 @@ function submitClass() {
   const section = document.getElementById('input-section').value.trim()
   const code = document.getElementById('input-code').value.trim()
   if (!section || !code) { alert('Section name and subject code are required.'); return }
-  addClass(section, code, document.getElementById('input-instructor').value.trim(), document.getElementById('input-year').value.trim(), document.getElementById('input-custom-id').value.trim())
+  const customId = section + '-' + code
+  addClass(section, code, document.getElementById('input-instructor').value.trim(), document.getElementById('input-year').value.trim(), customId)
   document.getElementById('input-section').value = ''
   document.getElementById('input-code').value = ''
   document.getElementById('input-instructor').value = ''
   document.getElementById('input-year').value = ''
-  document.getElementById('input-custom-id').value = ''
   hideAddClass()
   renderHome()
 }
