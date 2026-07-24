@@ -367,8 +367,18 @@ function renderClassDetail() {
   }).join('')
 }
 
+let gradeEntrySearchQuery = ''
+
+function searchGradeEntry() {
+  gradeEntrySearchQuery = (document.getElementById('grade-entry-search')?.value || '').toLowerCase()
+  renderGradeEntry()
+}
+
 function renderGradeEntry() {
-  const students = getStudents(currentClassId)
+  let students = getStudents(currentClassId)
+  if (gradeEntrySearchQuery) {
+    students = students.filter(s => s.name.toLowerCase().includes(gradeEntrySearchQuery) || s.studentNumber.toLowerCase().includes(gradeEntrySearchQuery))
+  }
   const assessments = getDistinctAssessments(currentClassId)
   const gradeData = getGradesForClass(currentClassId)
   const gradeMap = {}

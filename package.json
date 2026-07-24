@@ -1,0 +1,25 @@
+{
+  "name": "gradebookappsdk54",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "homepage": "https://davincenzoky.github.io/gradebook",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "gh-pages -d ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Davincenzoky/gradebook.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Davincenzoky/gradebook/issues"
+  },
+  "homepage": "https://github.com/Davincenzoky/gradebook#readme",
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
+  }
+}
