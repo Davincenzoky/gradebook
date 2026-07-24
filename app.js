@@ -93,7 +93,7 @@ function unarchiveClass(id) {
 // --- STUDENTS ---
 function getStudents(classId) {
   return all(`SELECT s.*, COALESCE((SELECT AVG(g.score / g.maxScore * 100) FROM grades g WHERE g.studentId = s.id), 0) as average
-    FROM students s WHERE s.classId = $id ORDER BY s.studentNumber`, { $id: classId })
+    FROM students s WHERE s.classId = $id ORDER BY s.name ASC`, { $id: classId })
 }
 
 function addStudent(num, name, classId) {
