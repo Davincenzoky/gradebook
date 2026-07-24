@@ -45,7 +45,10 @@ input[type=number]{-moz-appearance:textfield}
     <button onclick="navigate('import',{classId:currentClassId})" class="flex-1 py-3 rounded-lg bg-blue-500 text-white text-sm font-semibold border-none cursor-pointer hover:bg-blue-600 transition">Paste Students</button>
   </div>
   <div class="px-4 pb-2">
-    <input id="student-search" oninput="renderClassDetail()" placeholder="Search student by name or number..." class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm outline-none focus:border-blue-400 transition">
+    <div class="relative">
+      <input id="student-search" oninput="renderClassDetail()" placeholder="Search student by name or number..." class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm outline-none focus:border-blue-400 transition pr-10">
+      <button id="student-search-clear" onclick="clearStudentSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 border-none bg-transparent cursor-pointer text-gray-400 dark:text-gray-500 text-lg hidden">&times;</button>
+    </div>
   </div>
   <div id="class-students" class="px-4"></div>
   <button onclick="showAddStudent()" class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-500 text-white text-3xl shadow-lg border-none cursor-pointer flex items-center justify-center hover:bg-blue-600 transition z-10">+</button>
@@ -59,7 +62,10 @@ input[type=number]{-moz-appearance:textfield}
     <button onclick="showAddAssessment()" class="px-4 py-2 rounded-lg bg-blue-500 text-white text-sm font-semibold border-none cursor-pointer hover:bg-blue-600 transition">+ Assessment</button>
   </div>
   <div class="flex gap-2 px-4 pb-2">
-    <input id="grade-entry-search" onkeydown="if(event.key==='Enter')searchGradeEntry()" placeholder="Search student..." class="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm outline-none focus:border-blue-400 transition">
+    <div class="flex-1 relative">
+      <input id="grade-entry-search" oninput="searchGradeEntry()" placeholder="Search student..." class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm outline-none focus:border-blue-400 transition pr-10">
+      <button id="grade-entry-clear" onclick="clearGradeEntrySearch()" class="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 border-none bg-transparent cursor-pointer text-gray-400 dark:text-gray-500 text-lg hidden">&times;</button>
+    </div>
     <button onclick="searchGradeEntry()" class="px-5 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-semibold border-none cursor-pointer hover:bg-blue-600 transition">Search</button>
   </div>
   <div class="grade-scroll" id="grade-entry-grid"></div>

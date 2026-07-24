@@ -345,7 +345,10 @@ function renderClassDetail() {
   <div class="text-sm text-gray-500 dark:text-gray-400 ml-1">${escHTML(cls.subjectCode)}${cls.instructor ? ' · ' + escHTML(cls.instructor) : ''}${cls.academicYear ? ' · ' + escHTML(cls.academicYear) : ''}</div>`
 
   const students = getStudents(currentClassId)
-  const search = (document.getElementById('student-search')?.value || '').toLowerCase()
+  const searchInput = document.getElementById('student-search')
+  const search = (searchInput?.value || '').toLowerCase()
+  const clearBtn = document.getElementById('student-search-clear')
+  if (clearBtn) clearBtn.classList.toggle('hidden', !search)
   const filtered = search ? students.filter(s => s.name.toLowerCase().includes(search) || s.studentNumber.toLowerCase().includes(search)) : students
   const container = document.getElementById('class-students')
   if (!filtered.length) {
@@ -371,10 +374,25 @@ let gradeEntrySearchQuery = ''
 
 function searchGradeEntry() {
   gradeEntrySearchQuery = (document.getElementById('grade-entry-search')?.value || '').toLowerCase()
+  document.getElementById('grade-entry-clear').classList.toggle('hidden', !gradeEntrySearchQuery)
   renderGradeEntry()
 }
 
+function clearGradeEntrySearch() {
+  document.getElementById('grade-entry-search').value = ''
+  gradeEntrySearchQuery = ''
+  document.getElementById('grade-entry-clear').classList.add('hidden')
+  renderGradeEntry()
+}
+
+function clearStudentSearch() {
+  document.getElementById('student-search').value = ''
+  document.getElementById('student-search-clear').classList.add('hidden')
+  renderClassDetail()
+}
+
 function renderGradeEntry() {
+  document.getElementById('grade-entry-clear').classList.toggle('hidden', !gradeEntrySearchQuery)
   let students = getStudents(currentClassId)
   if (gradeEntrySearchQuery) {
     students = students.filter(s => s.name.toLowerCase().includes(gradeEntrySearchQuery) || s.studentNumber.toLowerCase().includes(gradeEntrySearchQuery))
